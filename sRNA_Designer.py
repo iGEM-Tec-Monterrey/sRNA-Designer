@@ -30,6 +30,18 @@ import matplotlib.pyplot as plt
 import re
 from nupack import *
 
+"IMPORTADOR DE FUNCIONES"
+from ale_score import *
+from complement import *
+from local_min import *
+from loop_counter import *
+from seq_score import *
+from u_score import *
+from abe_score import *
+from ale_score import *
+
+
+
 "Secuencia del HFQ Binding Domain"
 sHFQ='UUUCUGUUGGGCCAUUGCAUUGCCACUGAUUUUCCAACAUAUAAAAAGACAAGCCCGAACAGUCGUCCGGGCUUUUUUUCUCGAG'
 sHFQ_DNA='tttctgttgggccattgcattgccactgattttccaacatataaaaagacaagcccgaacagtcgtccgggctttttttctcgag'
@@ -56,7 +68,7 @@ def FinalScoreM1(ArchivoGen, iVentana, sHFQ, dRangoE):
         dSEQscore=seq_score(sRNA_HFQ)
         dfMinLocal=local_min(sRNA_HFQ, dRangoE)
         dABEscore=abe_score(dfMinLocal)
-        dALEscore=ale_score(dfMinLocal)
+        dALEscore=ALEscore(dfMinLocal)
         dFinalScore=dSEQscore+dUscore-dABEscore-dALEscore
         dfsRNA=dfsRNA.append({'mRNA':mRNA, 'sRNA':sRNA_HFQ, 'SEQscore':dSEQscore, 'ABEscore':dABEscore, 'ALEscore':dALEscore, 'Uscore':dUscore, 'FinalScore':dFinalScore}, ignore_index=True)
 
@@ -149,11 +161,11 @@ def FinalScoreMod1(ArchivoGen, iVentana, sHFQ):
     dfsRNA=pd.DataFrame(columns=['mRNA', 'sRNA', 'SEQscore', 'ABEscore', 'ALEscore','Uscore', 'Score Modelo 1'])
     for i in range(len(Gen)-iVentana+1):
         mRNA=Gen[i:i+iVentana]
-        sRNA=complementarios(mRNA)
-        dUscore=Uscore(sRNA+sHFQ)
-        dSEQscore=SeqScore(sRNA+sHFQ)
-        dfMinLocal=MínimosLocales(sRNA+sHFQ)
-        dABEscore=ABEscore(dfMinLocal)
+        sRNA=complement(mRNA)
+        dUscore=u_score(sRNA+sHFQ)
+        dSEQscore=seq_score(sRNA+sHFQ)
+        dfMinLocal=local_min(sRNA+sHFQ)
+        dABEscore=abe_score(dfMinLocal)
         dALEscore=ALEscore(dfMinLocal)
         dFinalScore=dSEQscore+dUscore-dABEscore-dALEscore
         dfsRNA=dfsRNA.append({'mRNA':mRNA, 'sRNA':sRNA, 'SEQscore':dSEQscore, 'ABEscore':dABEscore, 'ALEscore':dALEscore, 'Uscore':dUscore, 'FinalScore':dFinalScore}, ignore_index=True)
@@ -175,7 +187,7 @@ def FinalScoreMod2(ArchivoGen, iVentana):
     dfsRNA=pd.DataFrame(columns=['ELibre Hibrid', 'ELibre RegTarget', 'ELibre Fold sRNA', 'Factor de accesibilidad', 'Delta G overall', 'Score modelo 2'])
     for i in range(len(Gen)-iVentana+1):
         mRNA=Gen[i:i+iVentana]
-        sRNA=complementarios(mRNA)
+        sRNA=complement(mRNA)
         dELibreHibrid=sRNA_mRNA_Energía(sRNA, mRNA)
         dELibreTarget=deltaGIndividual(mRNA)
         dELibresRNA=deltaGIndividual(sRNA)
@@ -206,7 +218,7 @@ def ScoreIntegrador(ArchivoGen, iVentana, sHFQ, dRangoE):
     dfsRNA=pd.DataFrame(columns=['mRNA', 'sRNA', 'SEQscore', 'ABEscore', 'ALEscore','Uscore', 'FinalScoreM1','ELibre Hibrid', 'ELibre RegTarget', 'ELibre Fold sRNA', 'Factor de accesibilidad', 'Delta G overall', 'FinalScoreM2'])
     for i in range(len(Gen)-iVentana+1):
         mRNA=Gen[i:i+iVentana]
-        sRNA=complementarios(mRNA)
+        sRNA=complement(mRNA)
         if i==0:
             mRNAtF=Gen[i:(i+iVentana+1)]
         
@@ -217,10 +229,10 @@ def ScoreIntegrador(ArchivoGen, iVentana, sHFQ, dRangoE):
             mRNAtF=Gen[(i-1):(i+iVentana)]
 
         sRNA_HFQ=str(sRNA)+str(sHFQ)
-        dUscore=Uscore(sRNA_HFQ)
-        dSEQscore=SeqScore(sRNA_HFQ)
-        dfMinLocal=MínimosLocales(sRNA_HFQ, dRangoE)
-        dABEscore=ABEscore(dfMinLocal)
+        dUscore=u_score(sRNA_HFQ)
+        dSEQscore=seq_score(sRNA_HFQ)
+        dfMinLocal=local_min(sRNA_HFQ, dRangoE)
+        dABEscore=abe_score(dfMinLocal)
         dALEscore=ALEscore(dfMinLocal)
         dFinalScoreM1=dSEQscore+dUscore-dABEscore-dALEscore
         dELibreHibrid=sRNA_mRNA_Energía(sRNA, mRNA)
@@ -243,4 +255,11 @@ def ScoreIntegrador(ArchivoGen, iVentana, sHFQ, dRangoE):
     output=dfsRNA.to_csv('ScoreFN.csv', index=True)
     return output
 
-ScoreIntegrador('ampR-fin.fa',24, sHFQ, 5)
+print("sRNA Designer v1.0")
+print("This python script analyzes a defined mRNA sequence, generates a dataset of candidates sRNA sequences and then applies a score series")
+print("Make sure you have all files in the same directory, or indicate in which folder is your mRNA sequence: ")
+fGen=str(input("Type the file in which your gene is located in FASTA format: "))
+iOligoLen=int(input("Type the length of the desired sRNA sequences: "))
+iAboveMFE=int(input("Type the range of free enrgy (in kcal/mol) above the MFE for local minima calculation: "))
+
+ScoreIntegrador(fGen, iOligoLen, sHFQ, iAboveMFE)

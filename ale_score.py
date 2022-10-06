@@ -1,5 +1,5 @@
 "Luego creamos la función para iterar entre el archivo de pandas"
-from . import loop_counter
+from loop_counter import *
 def ALEscore(dfMinLocal):
     dSumatoria=0
     for i in range(len(dfMinLocal)):
